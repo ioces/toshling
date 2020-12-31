@@ -1,0 +1,5 @@
+.vscode
+.venv
+*.egg-info
+__pycache__
+test/API_KEY
