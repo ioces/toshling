@@ -2,6 +2,7 @@ import requests
 import pathlib
 import shutil
 import json
+import pprint
 import statham.schema.parser
 import statham.serializers.python
 from json_ref_dict import materialize, RefDict
@@ -87,12 +88,12 @@ def fix(obj):
 
 
 # Clean up previous runs of the script
-#shutil.rmtree('schemas/', ignore_errors=True)
+shutil.rmtree('schemas/', ignore_errors=True)
 
 # Make somewhere to store original schemas
 original_schema_path = pathlib.Path('schemas/original/')
 original_schema_path.mkdir(parents=True, exist_ok=True)
-'''
+
 # Get schemas
 for schema_path in SCHEMAS:
     response = requests.get(API_SCHEMA + schema_path)
@@ -100,7 +101,7 @@ for schema_path in SCHEMAS:
         schema = response.text
         with original_schema_path.joinpath(schema_path + '.json').open('w') as f:
             f.write(schema)
-'''
+
 # Make somewhere to generate fixed schemas
 fixed_schema_path = pathlib.Path('schemas/fixed')
 fixed_schema_path.mkdir(parents=True, exist_ok=True)
@@ -125,13 +126,15 @@ for original_schema_file_path in original_schema_path.glob('*.json'):
 with fixed_schema_path.joinpath('top.json').open('w') as f:
     json.dump(top, f, sort_keys=True, indent=4)
 
-# Convert the JSON schemas into Python objects using statham
+# Convert the JSON schemas into Python objects using statham. These
+# form our return types.
 schema = materialize(RefDict(str(fixed_schema_path.joinpath('top.json'))), context_labeller=title_labeller())
 returns = statham.schema.parser.parse(schema)
-with open('return_types.py', 'w') as f:
+with open('models/return_types.py', 'w') as f:
     f.write(statham.serializers.python.serialize_python(*returns))
 
-# Iterate the LDOs from all schemas
+# Iterate the LDOs from all schemas, with the aim of automatically discovering all API
+# methods
 api_methods = []
 for n, s in schema['definitions'].items():
     try:
@@ -160,13 +163,13 @@ for n, s in schema['definitions'].items():
                 for negated_key in negated_keys:
                     argument.properties["not" + negated_key[16:]] = argument.properties.pop(negated_key)
             
-            api_methods.append((full_name, method, href, argument))
+            api_methods.append((full_name, method, href, argument, None))
     except Exception as e:
         pass
 
 # Toshl has a lot of duplicate method/endpoint pairs, lots of which are invalid. We
 # will take only those with the longest name (which usually means there is a verb on the end).
-# Also discard any specifically named ones.
+# Also discard any with names in the discard list.
 discard = {
     'accounts.account',
     'budgets.budget',
@@ -179,15 +182,18 @@ discard = {
     'months.month'
 }
 seen = set()
-filtered_api_methods = []
-for api_method in sorted(api_methods, key=lambda x: (x[2].split('?')[0], x[1], -len(x[0]))):
-    key = (api_method[2].split('?')[0], api_method[1])
-    if key not in seen and api_method[0] not in discard:
-        filtered_api_methods.append(api_method)
+filtered_api_methods = {}
+for name, method, href, arg, ret in sorted(api_methods, key=lambda x: (x[2].split('?')[0], x[1], -len(x[0]))):
+    key = (href.split('?')[0], method)
+    if key not in seen and name not in discard:
+        filtered_api_methods[name] = {'method': method, 'href': href, 'argument': arg, 'return': ret}
     seen.add(key)
 
-print("\n".join(f"{api_method}" for api_method in filtered_api_methods))
+# Write the argument models Python module.
+with open('models/argument_types.py', 'w') as f:
+    f.write(statham.serializers.python.serialize_python(*(api_method['argument'] for api_method in filtered_api_methods.values())))
 
-
-with open('argument_types.py', 'w') as f:
-    f.write(statham.serializers.python.serialize_python(*(api_method[-1] for api_method in filtered_api_methods)))
+# Write a list of generated API methods that can be used to autogenerate the API client.
+with open('endpoints/_generated.py', 'w') as f:
+    f.write("from ..models.argument_types import *\n\n")
+    f.write(f"_api_methods = \\\n{pprint.pformat(filtered_api_methods)}")
