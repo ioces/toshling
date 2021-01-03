@@ -56,12 +56,18 @@ class Client:
         
         # Check if the response is OK.
         if response.ok:
-            # Attempt to construct the return type, handling lists specially.
+            # Attempt to construct the return type, handling lists, and some
+            # dicts especially (Toshl decided that on some endpoints such as
+            # the currencies list that they'd actually return a dict).
             if return_type:
                 plain = response.json()
                 if isinstance(plain, list):
                     return [return_type(p) for p in plain]
-                else:
+                elif set(plain.keys()).issubset(set(p.source for p in return_type.properties.values())):
                     return return_type(response.json())
+                elif isinstance(plain, dict):
+                    return {k: return_type(v) for k, v in plain.items()}
+                else:
+                    return plain
         else:
             response.raise_for_status()
