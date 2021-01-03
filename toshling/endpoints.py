@@ -180,6 +180,9 @@ class Categories(Endpoint):
     def create(self, **kwargs):
         return self.client.request('/categories', 'POST', argument_type=argument_types.CategoriesCreateArgument, **kwargs)
     
+    def list(self, **kwargs):
+        return self.client.request('/categories', 'GET', argument_type=argument_types.CategoriesListArgument, return_type=return_types.Category, **kwargs)
+    
 
 class Budgets(Endpoint):
     def move(self, **kwargs):

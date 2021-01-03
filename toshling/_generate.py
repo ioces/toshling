@@ -46,6 +46,7 @@ SCHEMAS = [
     "budget",
     "budget.list",
     "category",
+    "category.list",
     "category.sum",
     "category.sum.list",
     "tag",
@@ -90,12 +91,12 @@ def fix(obj):
 
 
 # Clean up previous runs of the script
-#shutil.rmtree('schemas/', ignore_errors=True)
+shutil.rmtree('schemas/', ignore_errors=True)
 
 # Make somewhere to store original schemas
 original_schema_path = pathlib.Path('schemas/original/')
 original_schema_path.mkdir(parents=True, exist_ok=True)
-'''
+
 # Get schemas
 for schema_path in SCHEMAS:
     response = requests.get(API_SCHEMA + schema_path)
@@ -103,7 +104,7 @@ for schema_path in SCHEMAS:
         schema = response.text
         with original_schema_path.joinpath(schema_path + '.json').open('w') as f:
             f.write(schema)
-'''
+
 # Make somewhere to generate fixed schemas
 fixed_schema_path = pathlib.Path('schemas/fixed')
 fixed_schema_path.mkdir(parents=True, exist_ok=True)

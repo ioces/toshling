@@ -130,6 +130,23 @@ class BudgetsMoveArgument(Object):
     position: int = Property(Integer(minimum=0), required=True)
 
 
+class CategoriesListArgument(Object):
+
+    ids: Maybe[str] = Property(String())
+
+    include_deleted: bool = Property(Boolean(default=False))
+
+    page: int = Property(Integer(default=0, minimum=0))
+
+    per_page: int = Property(Integer(default=200, minimum=10, maximum=500))
+
+    search: Maybe[str] = Property(String())
+
+    since: Maybe[str] = Property(String(format='date-time'))
+
+    type: Maybe[str] = Property(String(enum=['expense', 'income']))
+
+
 class CategoriesMergeArgument(Object):
 
     categories: List[Any] = Property(Array(Element()), required=True)

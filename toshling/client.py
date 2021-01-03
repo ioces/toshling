@@ -30,21 +30,33 @@ class Client:
     
     def request(self, href, method, argument_type=None, return_type=None, **kwargs):
         options = {}
+
         if argument_type:
+            # Remap kwargs (which are modified to avoid Python reserved keywords) back into
+            # the source keys of the argument object.
             remap = {}
             for k, v in kwargs.items():
                 remap[argument_type.properties[k].source] = v
+
+            # Construct the argument, which will validate all kwargs.
+            argument = argument_type(remap)
+
+            # If we GET, use the original remap, otherwise, JSON encode the argument.
             if method == 'GET':
                 options['params'] = remap
             else:
-                options['data'] = json.dumps(argument_type(remap), cls=StathamJSONEncoder)
+                options['data'] = json.dumps(argument, cls=StathamJSONEncoder)
                 options['headers'] = {'Content-Type': 'application/json'}
-        print(options)
+
+        # Do the request.
         response = requests.request(method,
                                     self.api_endpoint_base + href.format(**kwargs),
                                     auth=(self.api_key, ''),
                                     **options)
+        
+        # Check if the response is OK.
         if response.ok:
+            # Attempt to construct the return type, handling lists specially.
             if return_type:
                 plain = response.json()
                 if isinstance(plain, list):
