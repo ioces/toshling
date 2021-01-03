@@ -3,6 +3,8 @@ import pathlib
 import shutil
 import json
 import pprint
+import models.return_types
+from jinja2 import Template
 import statham.schema.parser
 import statham.serializers.python
 from json_ref_dict import materialize, RefDict
@@ -88,12 +90,12 @@ def fix(obj):
 
 
 # Clean up previous runs of the script
-shutil.rmtree('schemas/', ignore_errors=True)
+#shutil.rmtree('schemas/', ignore_errors=True)
 
 # Make somewhere to store original schemas
 original_schema_path = pathlib.Path('schemas/original/')
 original_schema_path.mkdir(parents=True, exist_ok=True)
-
+'''
 # Get schemas
 for schema_path in SCHEMAS:
     response = requests.get(API_SCHEMA + schema_path)
@@ -101,7 +103,7 @@ for schema_path in SCHEMAS:
         schema = response.text
         with original_schema_path.joinpath(schema_path + '.json').open('w') as f:
             f.write(schema)
-
+'''
 # Make somewhere to generate fixed schemas
 fixed_schema_path = pathlib.Path('schemas/fixed')
 fixed_schema_path.mkdir(parents=True, exist_ok=True)
@@ -137,63 +139,113 @@ with open('models/return_types.py', 'w') as f:
 # methods
 api_methods = []
 for n, s in schema['definitions'].items():
+    # Get links (handle the extra crap statham puts into the definitions object)
+    links = []
     try:
-        for link in s.get("links", []):
-            href = link["href"]
-
-            method = link.get("method", "GET")
-            
-            crumbs = [crumb.split('?')[0] for crumb in href.split('/') if crumb and crumb[0] != "{"]
-            crumbs.append(link["rel"])
-            if crumbs[-1] == "self":
-                crumbs[-1] = "get"
-            if crumbs[-1] == crumbs[-2]:
-                crumbs = crumbs[:-1]
-            
-            full_name = '.'.join(crumbs)
-            
-            argument = None
-            if "schema" in link:
-                # Sub in a sensible title and parse the argument structure.
-                link["schema"]["title"] = full_name + ".argument"
-                argument = statham.schema.parser.parse_element(link['schema'])
-
-                # Toshl uses `!attribute` a bunch, which statham turns into `exclamation_mark_attribute`. Change these to `not_attribute`
-                negated_keys = [key for key in argument.properties if key[:16] == "exclamation_mark"]
-                for negated_key in negated_keys:
-                    argument.properties["not" + negated_key[16:]] = argument.properties.pop(negated_key)
-            
-            api_methods.append((full_name, method, href, argument, None))
-    except Exception as e:
+        links = s.get("links", [])
+    except Exception:
         pass
 
+    for link in links:
+        href = link["href"]
+
+        method = link.get("method", "GET")
+        
+        crumbs = [crumb.split('?')[0] for crumb in href.split('/') if crumb and crumb[0] != "{"]
+        crumbs.append(link["rel"])
+        if crumbs[-1] == "self":
+            crumbs[-1] = "get"
+        if crumbs[-1] == crumbs[-2]:
+            crumbs = crumbs[:-1]
+        
+        # Get the argument type.
+        argument = None
+        if "schema" in link:
+            # Sub in a sensible title and parse the argument structure.
+            link["schema"]["title"] = '.'.join(crumbs + ["argument"])
+            argument = statham.schema.parser.parse_element(link['schema'])
+
+            # Toshl uses `!attribute` a bunch, which statham turns into `exclamation_mark_attribute`. Change these to `not_attribute`
+            negated_keys = [key for key in argument.properties if key[:16] == "exclamation_mark"]
+            for negated_key in negated_keys:
+                argument.properties["not" + negated_key[16:]] = argument.properties.pop(negated_key)
+        
+        # Try guess some return types.
+        return_ = None
+        try:
+            if crumbs[-1] in {'get', 'list', 'update'}:
+                class_parts = [p.capitalize() for p in n.split('.')]
+                if class_parts[-1] in {'List'}:
+                    class_parts = class_parts[:-1]
+                return_ = getattr(models.return_types, ''.join(class_parts))
+        except Exception:
+            pass
+
+        api_methods.append((tuple(crumbs), method, href, argument, return_))
+
 # Toshl has a lot of duplicate method/endpoint pairs, lots of which are invalid. We
-# will take only those with the longest name (which usually means there is a verb on the end).
-# Also discard any with names in the discard list.
+# will take only those with the longest crumbs (which usually means there is a verb on the end).
+# Also discard/modify/add methods we know need modifying.
 discard = {
-    'accounts.account',
-    'budgets.budget',
-    'categories.category',
-    'entries.entry',
-    'entries.locations.location',
-    'entries.transactions',
-    'entries.transactions.repeats.repeating transactions',
-    'entries.transaction_pair',
-    'months.month'
+    ('accounts', 'account'),
+    ('budgets', 'budget'),
+    ('categories', 'category'),
+    ('entries', 'entry'),
+    ('entries', 'locations', 'location'),
+    ('entries', 'transactions'),
+    ('entries', 'transactions', 'repeats', 'repeating transactions'),
+    ('entries', 'transaction_pair'),
+    ('months', 'month')
+}
+modify = {
+
+}
+add = {
+
 }
 seen = set()
 filtered_api_methods = {}
-for name, method, href, arg, ret in sorted(api_methods, key=lambda x: (x[2].split('?')[0], x[1], -len(x[0]))):
+for crumbs, method, href, arg, ret in sorted(api_methods, key=lambda x: (x[2].split('?')[0], x[1], -len(x[0]))):
     key = (href.split('?')[0], method)
-    if key not in seen and name not in discard:
-        filtered_api_methods[name] = {'method': method, 'href': href, 'argument': arg, 'return': ret}
+    if key not in seen and crumbs not in discard:
+        api_method = {'method': method, 'href': href, 'argument': arg, 'return': ret}
+        api_method.update(modify.get(crumbs, {}))
+        filtered_api_methods[crumbs] = api_method
     seen.add(key)
+filtered_api_methods.update(add)
+filtered_api_methods = dict(sorted(filtered_api_methods.items(), key=lambda x: x[0][:-1]))
+
+#pprint.pprint(filtered_api_methods, sort_dicts=False)
 
 # Write the argument models Python module.
 with open('models/argument_types.py', 'w') as f:
-    f.write(statham.serializers.python.serialize_python(*(api_method['argument'] for api_method in filtered_api_methods.values())))
+    arguments = (api_method['argument'] for api_method in filtered_api_methods.values() if api_method['argument'])
+    f.write(statham.serializers.python.serialize_python(*arguments))
 
-# Write a list of generated API methods that can be used to autogenerate the API client.
-with open('endpoints/_generated.py', 'w') as f:
-    f.write("from ..models.argument_types import *\n\n")
-    f.write(f"_api_methods = \\\n{pprint.pformat(filtered_api_methods)}")
+# Automatically generate Python code for the endpoints.
+classes = []
+subclasses = []
+prev_length = 0
+for crumbs, api_method in reversed(filtered_api_methods.items()):
+    classname = ''.join(n.capitalize() for n in crumbs[:-1])
+    if not classes or classname != classes[-1]['name']:
+        class_ = {'name': classname, 'methods': []}
+        if len(crumbs) < prev_length:
+            if prev_length - len(crumbs) > 1:
+                raise RuntimeError("We don't handle intermediate paths yet.")
+            class_['subclasses'] = subclasses
+            subclasses = [(crumbs[-2], classname)]
+        elif len(crumbs) > prev_length:
+            subclasses = [(crumbs[-2], classname)]
+        elif len(crumbs) == prev_length:
+            subclasses.append((crumbs[-2], classname))
+        classes.append(class_)
+        prev_length = len(crumbs)
+
+    method = {'name': crumbs[-1]}
+    method.update(api_method)
+    classes[-1]['methods'].append(method)
+
+with open('endpoints.py.tmpl') as tf, open('endpoints.py', 'w') as ef:
+    template = Template(tf.read())
+    ef.write(template.render(classes=classes))

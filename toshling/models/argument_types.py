@@ -6,7 +6,6 @@ from statham.schema.elements import (
     Boolean,
     Element,
     Integer,
-    NoneType,
     Number,
     Object,
     String,
@@ -138,6 +137,16 @@ class CategoriesMergeArgument(Object):
     category: str = Property(String(), required=True)
 
 
+class CategoriesDeleteArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
+class CategoriesGetArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
 class CategoriesSumsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -171,16 +180,6 @@ class CategoriesSumsListArgument(Object):
     not_locations: Maybe[str] = Property(String(), source='!locations')
 
     not_tags: Maybe[str] = Property(String(), source='!tags')
-
-
-class CategoriesDeleteArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
-class CategoriesGetArgument(Object):
-
-    id: str = Property(String(), required=True)
 
 
 class CurrenciesListArgument(Object):
@@ -231,6 +230,21 @@ class EntriesListArgument(Object):
     not_tags: Maybe[str] = Property(String(), source='!tags')
 
 
+class EntriesSplitArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
+class EntriesDeleteArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
+class EntriesGetArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
 class EntriesLocationsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -273,11 +287,6 @@ class EntriesLocationsGetArgument(Object):
     id: str = Property(String(), required=True)
 
 
-class EntriesSplitArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
 class EntriesSumsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -311,16 +320,6 @@ class EntriesSumsListArgument(Object):
     not_locations: Maybe[str] = Property(String(), source='!locations')
 
     not_tags: Maybe[str] = Property(String(), source='!tags')
-
-
-class EntriesDeleteArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
-class EntriesGetArgument(Object):
-
-    id: str = Property(String(), required=True)
 
 
 class ExportsListArgument(Object):
@@ -402,6 +401,18 @@ class ImagesGetArgument(Object):
     id: str = Property(String(), required=True)
 
 
+class MePushArgument(Object):
+
+    token: str = Property(String(), required=True)
+
+    type: str = Property(String(enum=['apple', 'apple_fcm', 'google', 'windows']), required=True)
+
+
+class MeRevertArgument(Object):
+
+    password: str = Property(String(), required=True)
+
+
 class MeAdjustCampaignArgument(Object):
 
     adgroup: str = Property(String(), required=True)
@@ -432,18 +443,6 @@ class MeNotificationsDeleteArgument(Object):
 class MeNotificationsGetArgument(Object):
 
     id: str = Property(String(), required=True)
-
-
-class MePushArgument(Object):
-
-    token: str = Property(String(), required=True)
-
-    type: str = Property(String(enum=['apple', 'apple_fcm', 'google', 'windows']), required=True)
-
-
-class MeRevertArgument(Object):
-
-    password: str = Property(String(), required=True)
 
 
 class TagsListArgument(Object):
@@ -482,6 +481,16 @@ class TagsMergeArgument(Object):
     tags: List[Any] = Property(Array(Element()), required=True)
 
 
+class TagsDeleteArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
+class TagsGetArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
 class TagsSumsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -513,16 +522,6 @@ class TagsSumsListArgument(Object):
     not_locations: Maybe[str] = Property(String(), source='!locations')
 
     not_tags: Maybe[str] = Property(String(), source='!tags')
-
-
-class TagsDeleteArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
-class TagsGetArgument(Object):
-
-    id: str = Property(String(), required=True)
 
 
 class Currency(Object):

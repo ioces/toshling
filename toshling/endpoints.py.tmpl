@@ -1,0 +1,20 @@
+from .models import argument_types, return_types
+
+class Endpoint:
+    def __init__(self, client):
+        self.client = client
+{% for class in classes %}
+
+class {{ class.name }}(Endpoint):
+    {%- if class.subclasses is defined %}
+    def __init__(self, client):
+        super().__init__(client)
+        {%- for name, subclass in class.subclasses %}
+        self.{{ name }} = {{ subclass }}(client)
+        {%- endfor %}
+    {% endif %}
+    {%- for method in class.methods %}
+    def {{ method.name }}(self, **kwargs):
+        return self.client.request('{{ method.href }}', '{{ method.method }}'{% if method.argument %}, argument_type=argument_types.{{ method.argument }}{% endif %}{% if method.return %}, return_type=return_types.{{ method.return }}{% endif %}, **kwargs)
+    {% endfor %}
+{%- endfor %}
