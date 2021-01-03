@@ -173,14 +173,22 @@ for n, s in schema['definitions'].items():
         
         # Try guess some return types.
         return_ = None
-        try:
-            if crumbs[-1] in {'get', 'list', 'update'}:
-                class_parts = [p.capitalize() for p in n.split('.')]
-                if class_parts[-1] in {'List'}:
-                    class_parts = class_parts[:-1]
-                return_ = getattr(models.return_types, ''.join(class_parts))
-        except Exception:
-            pass
+        if crumbs[-1] in {'get', 'list', 'update'}:
+            guesses = []
+            
+            guesses.append(s['title'])
+
+            class_parts = [p.capitalize() for p in n.split('.')]
+            if class_parts[-1] in {'List'}:
+                class_parts = class_parts[:-1]
+            guesses.append(''.join(class_parts))
+
+            for guess in guesses:
+                try:
+                    return_ = getattr(models.return_types, guess)
+                    break
+                except Exception as e:
+                    pass
 
         api_methods.append((tuple(crumbs), method, href, argument, return_))
 

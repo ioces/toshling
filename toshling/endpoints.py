@@ -108,7 +108,7 @@ class Exports(Endpoint):
 
 class EntriesSums(Endpoint):
     def list(self, **kwargs):
-        return self.client.request('/entries/sums', 'GET', argument_type=argument_types.EntriesSumsListArgument, **kwargs)
+        return self.client.request('/entries/sums', 'GET', argument_type=argument_types.EntriesSumsListArgument, return_type=return_types.Day, **kwargs)
     
 
 class EntriesLocations(Endpoint):
@@ -152,7 +152,7 @@ class Entries(Endpoint):
 
 class Currencies(Endpoint):
     def list(self, **kwargs):
-        return self.client.request('/currencies', 'GET', argument_type=argument_types.CurrenciesListArgument, return_type=return_types.Currency, **kwargs)
+        return self.client.request('/currencies', 'GET', argument_type=argument_types.CurrenciesListArgument, return_type=return_types.CurrencyElement, **kwargs)
     
 
 class CategoriesSums(Endpoint):
