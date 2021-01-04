@@ -1,9 +1,9 @@
 from .models import argument_types, return_types
 
+
 class Endpoint:
     def __init__(self, client):
         self.client = client
-
 
 class TagsSums(Endpoint):
     def list(self, **kwargs):

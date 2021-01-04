@@ -1,9 +1,10 @@
 from .models import argument_types, return_types
 
+
 class Endpoint:
     def __init__(self, client):
         self.client = client
-{% for class in classes %}
+{%- for class in classes %}
 
 class {{ class.name }}(Endpoint):
     {%- if class.subclasses is defined %}

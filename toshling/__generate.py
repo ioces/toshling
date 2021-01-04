@@ -255,6 +255,6 @@ for crumbs, api_method in reversed(filtered_api_methods.items()):
     method.update(api_method)
     classes[-1]['methods'].append(method)
 
-with open('endpoints.py.tmpl') as tf, open('endpoints.py', 'w') as ef:
+with open('_endpoints.py.tmpl') as tf, open('_endpoints.py', 'w') as ef:
     template = Template(tf.read())
     ef.write(template.render(classes=classes))

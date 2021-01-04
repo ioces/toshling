@@ -1,4 +1,4 @@
-from . import endpoints
+from . import _endpoints as endpoints
 import requests
 import json
 from statham.schema.elements import Object
