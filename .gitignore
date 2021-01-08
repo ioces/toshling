@@ -4,3 +4,5 @@
 __pycache__
 test/API_KEY
 toshling/schemas
+build
+dist
