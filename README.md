@@ -12,11 +12,30 @@ pip install toshling
 ## Usage
 
 All interaction with Toshl is done via the `Client` class, which is constructed with your API key:
+
 ```python
 import toshling
 
 client = toshling.Client('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxxxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx')
 ```
+
+Namespaces and methods under the client generally match the [API documentation](https://developer.toshl.com/docs/). All arguments passed must be in `keyword=value` form. Due to some keywords being reserved or invalid in Python, some substitutes must be made. Examples are below:
+
+```python
+accounts = client.accounts.list()
+groceries_category = client.categories.list(search='Groceries')[0]
+everything_but_groceries = client.entries.list(account=accounts[0].id,
+                                               from_='2020-12-01',
+                                               to='2020-12-31', not_categories=groceries_category.id)
+client.entries.create(amount=168.43,
+                      currency={'code': 'AUD'},
+                      date='2020-03-06',
+                      desc='Toilet paper for COVID-19 end-of-days',
+                      account=accounts[0].id,
+                      category=groceries_category.id)
+```
+
+More details on the required argument types and their validation can be found in the `toshling.models.argument_types` and `toshling.models.return_types`.
 
 ## Issues
 
