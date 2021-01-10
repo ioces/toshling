@@ -3,7 +3,6 @@ import pathlib
 import shutil
 import json
 import pprint
-import models.return_types
 from jinja2 import Template
 import statham.schema.parser
 import statham.serializers.python
@@ -133,8 +132,11 @@ with fixed_schema_path.joinpath('top.json').open('w') as f:
 # form our return types.
 schema = materialize(RefDict(str(fixed_schema_path.joinpath('top.json'))), context_labeller=title_labeller())
 returns = statham.schema.parser.parse(schema)
-with open('models/return_types.py', 'w') as f:
+with open('toshling/models/return_types.py', 'w') as f:
     f.write(statham.serializers.python.serialize_python(*returns))
+
+# Import our new return types.
+import toshling.models.return_types
 
 # Iterate the LDOs from all schemas, with the aim of automatically discovering all API
 # methods
@@ -185,7 +187,7 @@ for n, s in schema['definitions'].items():
 
             for guess in guesses:
                 try:
-                    return_ = getattr(models.return_types, guess)
+                    return_ = getattr(toshling.models.return_types, guess)
                     break
                 except Exception as e:
                     pass
@@ -227,7 +229,7 @@ filtered_api_methods = dict(sorted(filtered_api_methods.items(), key=lambda x: x
 #pprint.pprint(filtered_api_methods, sort_dicts=False)
 
 # Write the argument models Python module.
-with open('models/argument_types.py', 'w') as f:
+with open('toshling/models/argument_types.py', 'w') as f:
     arguments = (api_method['argument'] for api_method in filtered_api_methods.values() if api_method['argument'])
     f.write(statham.serializers.python.serialize_python(*arguments))
 
@@ -255,6 +257,6 @@ for crumbs, api_method in reversed(filtered_api_methods.items()):
     method.update(api_method)
     classes[-1]['methods'].append(method)
 
-with open('_endpoints.py.tmpl') as tf, open('_endpoints.py', 'w') as ef:
+with open('_endpoints.py.tmpl') as tf, open('toshling/_endpoints.py', 'w') as ef:
     template = Template(tf.read())
     ef.write(template.render(classes=classes))

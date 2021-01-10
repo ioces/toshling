@@ -3,6 +3,6 @@
 *.egg-info
 __pycache__
 test/API_KEY
-toshling/schemas
+schemas
 build
 dist
