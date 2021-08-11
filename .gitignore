@@ -2,7 +2,7 @@
 .venv
 *.egg-info
 __pycache__
-test/API_KEY
+API_KEY
 schemas
 build
 dist
