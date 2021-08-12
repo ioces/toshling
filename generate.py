@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import pprint  # pylint: disable=unused-import  # for testing
 import shutil
@@ -56,6 +57,7 @@ SCHEMAS = [
     "currency",
     "export",
     "export.list",
+    # "export.filters",
     "image"
 ]
 
@@ -107,13 +109,20 @@ fixed_schema_path = Path('schemas/fixed')
 fixed_schema_path.mkdir(parents=True, exist_ok=True)
 
 # Create a dummy item.json for the fixed schemas
-with fixed_schema_path.joinpath('item.json').open('w') as f:
+dummies = [
+    "item.json",
+    "export.filters.json",
+    "export.format.json",
+    "export.resource.json"
+]
+for dummy_json in dummies:
     item = {
         "type": "object",
         "properties": {},
-        "description": "Dummy Item, because Toshl devs do not include item.json"
+        "description": f"Dummy Item, because Toshl devs do not include {dummy_json}"
     }
-    json.dump(item, f, sort_keys=True, indent=4)
+    dummy_data = json.dumps(item, sort_keys=True, indent=4)
+    fixed_schema_path.joinpath(dummy_json).write_text(dummy_data)
 
 # Fix all of the schemas, and while we're at it,
 # create a top level object with definitions for all schemas.
@@ -131,12 +140,13 @@ for original_schema_file_path in original_schema_path.glob('*.json'):
 with fixed_schema_path.joinpath('top.json').open('w') as f:
     json.dump(top, f, sort_keys=True, indent=4)
 
-# Convert the JSON schemas into Python objects using statham. These
-# form our return types.
-schema = materialize(
-    RefDict(str(fixed_schema_path.joinpath('top.json'))),
-    context_labeller=title_labeller()
-)
+# Convert the JSON schemas into Python objects using statham.
+# These form our return types.
+curr_dir = Path.cwd()
+os.chdir(fixed_schema_path)
+schema = materialize(RefDict('top.json'), context_labeller=title_labeller())
+os.chdir(curr_dir)
+
 returns = statham.schema.parser.parse(schema)
 returns_path = Path('toshling/models/return_types.py')
 returns_path.write_text(statham.serializers.python.serialize_python(*returns))
@@ -144,8 +154,8 @@ returns_path.write_text(statham.serializers.python.serialize_python(*returns))
 # Import our new return types.
 import toshling.models.return_types
 
-# Iterate the LDOs from all schemas, with the aim of automatically discovering all API
-# methods
+# Iterate the LDOs from all schemas, with the aim of
+# automatically discovering all API methods
 api_methods = []
 for n, s in schema['definitions'].items():
     # Get links (handle the extra crap statham puts into the definitions object)
@@ -253,7 +263,7 @@ arg_types_path.write_text(statham.serializers.python.serialize_python(*arguments
 classes: List[Dict[str, List[Dict[str, Any]]]] = []
 subclasses = []
 prev_length = 0
-for crumbs, api_method in reversed(filtered_api_methods.items()):
+for crumbs, api_method in sorted(filtered_api_methods.items(), reverse=True):
     classname = ''.join(n.capitalize() for n in crumbs[:-1])
     if not classes or classname != classes[-1]['name']:
         class_ = {'name': classname, 'methods': []}
