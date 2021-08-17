@@ -67,17 +67,15 @@ def fix(obj: ObjectDict) -> ObjectDict:
     # Upgrade number/integer property ranges to JSON Schema draft 07 spec (statham doesn't like the old booleans)
     type_ = obj.get("type", None)
 
-    def set_del_exclusive(excl_minmax:str, minmax:str):
-        if excl_minmax in obj:
-            if obj[excl_minmax]:
-                obj[excl_minmax] = obj[minmax]
-                del obj[minmax]
-            else:
-                del obj[excl_minmax]
-
     if type_ in ("number", "integer"):
-        set_del_exclusive("exclusiveMinimum", "minimum")
-        set_del_exclusive("exclusiveMaximum", "maximum")
+        min_max = (("exclusiveMinimum", "minimum"), ("exclusiveMaximum", "maximum"))
+        for orig, repl in min_max:
+            if orig in obj:
+                if obj[orig]:
+                    obj[orig] = obj[repl]
+                    del obj[repl]
+                else:
+                    del obj[orig]
 
     # Replace type of 'date' (which is invalid)
     if type_ == "date":
