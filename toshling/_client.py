@@ -1,8 +1,20 @@
-from . import _endpoints as endpoints
-import requests
 import json
-from statham.schema.elements import Object
+from datetime import datetime
+
+import requests
 from statham.schema.constants import NotPassed
+from statham.schema.elements import Object
+from statham.schema.validation import format_checker
+
+from . import _endpoints as endpoints
+
+
+@format_checker.register("date")
+def is_date(value: str) -> bool:
+    try:
+        return bool(datetime.strptime(value, '%Y-%m-%d'))
+    except ValueError:
+        return False
 
 
 class StathamJSONEncoder(json.JSONEncoder):
