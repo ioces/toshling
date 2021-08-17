@@ -1,5 +1,5 @@
 import json
-import re
+from datetime import datetime
 
 import requests
 from statham.schema.constants import NotPassed
@@ -11,7 +11,10 @@ from . import _endpoints as endpoints
 
 @format_checker.register("date")
 def is_date(value: str) -> bool:
-    return bool(re.match(r"\d{4}-\d{2}-\d{2}", value))
+    try:
+        return bool(datetime.strptime(value, '%Y-%m-%d'))
+    except ValueError:
+        return False
 
 
 class StathamJSONEncoder(json.JSONEncoder):
