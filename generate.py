@@ -1,14 +1,16 @@
-import requests
-import pathlib
-import shutil
 import json
-import pprint
-from jinja2 import Template
+import os
+from pathlib import Path
+import pprint  # pylint: disable=unused-import  # for testing
+import shutil
+from typing import Any, Dict, List, Set, Tuple
+
+import requests
 import statham.schema.parser
 import statham.serializers.python
-from json_ref_dict import materialize, RefDict
+from jinja2 import Template
+from json_ref_dict import RefDict, materialize
 from statham.titles import title_labeller
-
 
 API_SCHEMA = "https://api2.toshl.com/schema/"
 SCHEMAS = [
@@ -55,33 +57,30 @@ SCHEMAS = [
     "currency",
     "export",
     "export.list",
+    # "export.filters",
     "image"
 ]
 
+ObjectDict = Dict[str, Any]
 
-def fix(obj):
+def fix(obj: ObjectDict) -> ObjectDict:
     # Upgrade number/integer property ranges to JSON Schema draft 07 spec (statham doesn't like the old booleans)
     type_ = obj.get("type", None)
-    if type_ == "number" or type_ == "integer":
-        if "exclusiveMinimum" in obj:
-            if obj["exclusiveMinimum"]:
-                obj["exclusiveMinimum"] = obj["minimum"]
-                del obj["minimum"]
-            else:
-                del obj["exclusiveMinimum"]
-        
-        if "exclusiveMaximum" in obj:
-            if obj["exclusiveMaximum"]:
-                obj["exclusiveMaximum"] = obj["maximum"]
-                del obj["maximum"]
-            else:
-                del obj["exclusiveMaximum"]
-    
+
+    if type_ in ("number", "integer"):
+        min_max = (("exclusiveMinimum", "minimum"), ("exclusiveMaximum", "maximum"))
+        for orig, repl in min_max:
+            if orig in obj:
+                if obj[orig]:
+                    obj[orig] = obj[repl]
+                    del obj[repl]
+                else:
+                    del obj[orig]
+
     # Replace type of 'date' (which is invalid)
     if type_ == "date":
-        obj["type"] = "string"
-        obj["format"] = "date"
-    
+        obj.update({"type": "string", "format":"date"})
+
     # Retitle objects to their original Java names, because the others are not unique
     if type_ == "object" and "javaType" in obj:
         obj["title"] = obj['javaType'].split('.')[-1]
@@ -93,28 +92,39 @@ def fix(obj):
 shutil.rmtree('schemas/', ignore_errors=True)
 
 # Make somewhere to store original schemas
-original_schema_path = pathlib.Path('schemas/original/')
+original_schema_path = Path('schemas/original/')
 original_schema_path.mkdir(parents=True, exist_ok=True)
 
 # Get schemas
 for schema_path in SCHEMAS:
     response = requests.get(API_SCHEMA + schema_path)
     if response.ok:
-        schema = response.text
-        with original_schema_path.joinpath(schema_path + '.json').open('w') as f:
-            f.write(schema)
+        schema_resp = response.text
+        original_schema_path.joinpath(schema_path + '.json').write_text(schema_resp)
 
 # Make somewhere to generate fixed schemas
-fixed_schema_path = pathlib.Path('schemas/fixed')
+fixed_schema_path = Path('schemas/fixed')
 fixed_schema_path.mkdir(parents=True, exist_ok=True)
 
 # Create a dummy item.json for the fixed schemas
-with fixed_schema_path.joinpath('item.json').open('w') as f:
-    item = {"type": "object", "properties": {}, "description": "A dummy Item, because Toshl devs decided to not include item.json"}
-    json.dump(item, f, sort_keys=True, indent=4)
+dummies = [
+    "item.json",
+    "export.filters.json",
+    "export.format.json",
+    "export.resource.json"
+]
+for dummy_json in dummies:
+    item = {
+        "type": "object",
+        "properties": {},
+        "description": f"Dummy Item, because Toshl devs do not include {dummy_json}"
+    }
+    dummy_data = json.dumps(item, sort_keys=True, indent=4)
+    fixed_schema_path.joinpath(dummy_json).write_text(dummy_data)
 
-# Fix all of the schemas, and while we're at it, create a top level object with definitions for all schemas.
-top = {"definitions": {}}
+# Fix all of the schemas, and while we're at it,
+# create a top level object with definitions for all schemas.
+top: Dict[str, Dict[str, Dict[str, Any]]] = {"definitions": {}}
 for original_schema_file_path in original_schema_path.glob('*.json'):
     top["definitions"][original_schema_file_path.stem] = {"$ref": f"{original_schema_file_path.name}#"}
 
@@ -128,18 +138,22 @@ for original_schema_file_path in original_schema_path.glob('*.json'):
 with fixed_schema_path.joinpath('top.json').open('w') as f:
     json.dump(top, f, sort_keys=True, indent=4)
 
-# Convert the JSON schemas into Python objects using statham. These
-# form our return types.
-schema = materialize(RefDict(str(fixed_schema_path.joinpath('top.json'))), context_labeller=title_labeller())
+# Convert the JSON schemas into Python objects using statham.
+# These form our return types.
+curr_dir = Path.cwd()
+os.chdir(fixed_schema_path)
+schema = materialize(RefDict('top.json'), context_labeller=title_labeller())
+os.chdir(curr_dir)
+
 returns = statham.schema.parser.parse(schema)
-with open('toshling/models/return_types.py', 'w') as f:
-    f.write(statham.serializers.python.serialize_python(*returns))
+returns_path = Path('toshling/models/return_types.py')
+returns_path.write_text(statham.serializers.python.serialize_python(*returns))
 
 # Import our new return types.
 import toshling.models.return_types
 
-# Iterate the LDOs from all schemas, with the aim of automatically discovering all API
-# methods
+# Iterate the LDOs from all schemas, with the aim of
+# automatically discovering all API methods
 api_methods = []
 for n, s in schema['definitions'].items():
     # Get links (handle the extra crap statham puts into the definitions object)
@@ -153,8 +167,12 @@ for n, s in schema['definitions'].items():
         href = link["href"]
 
         method = link.get("method", "GET")
-        
-        crumbs = [crumb.split('?')[0] for crumb in href.split('/') if crumb and crumb[0] != "{"]
+
+        crumbs = [
+            crumb.split('?')[0]
+            for crumb in href.split('/')
+            if crumb and crumb[0] != "{"
+        ]
         crumbs.append(link["rel"])
         if crumbs[-1] == "self":
             crumbs[-1] = "get"
@@ -168,11 +186,15 @@ for n, s in schema['definitions'].items():
             link["schema"]["title"] = '.'.join(crumbs + ["argument"])
             argument = statham.schema.parser.parse_element(link['schema'])
 
-            # Toshl uses `!attribute` a bunch, which statham turns into `exclamation_mark_attribute`. Change these to `not_attribute`
-            negated_keys = [key for key in argument.properties if key[:16] == "exclamation_mark"]
+            # Toshl uses `!attribute` a bunch, which statham turns into
+            # `exclamation_mark_attribute`. Change these to `not_attribute`
+            negated_keys = [
+                key for key in argument.properties if key[:16] == "exclamation_mark"
+            ]
             for negated_key in negated_keys:
-                argument.properties["not" + negated_key[16:]] = argument.properties.pop(negated_key)
-        
+                not_key = "not" + negated_key[16:]
+                argument.properties[not_key] = argument.properties.pop(negated_key)
+
         # Try guess some return types.
         return_ = None
         if crumbs[-1] in {'get', 'list', 'update'}:
@@ -194,8 +216,9 @@ for n, s in schema['definitions'].items():
 
         api_methods.append((tuple(crumbs), method, href, argument, return_))
 
-# Toshl has a lot of duplicate method/endpoint pairs, lots of which are invalid. We
-# will take only those with the longest crumbs (which usually means there is a verb on the end).
+# Toshl has a lot of duplicate method/endpoint pairs, lots of which are invalid.
+# We will take only those with the longest crumbs
+# (which usually means there is a verb on the end).
 # Also discard/modify/add methods we know need modifying.
 discard = {
     ('accounts', 'account'),
@@ -216,7 +239,8 @@ add = {
 }
 seen = set()
 filtered_api_methods = {}
-for crumbs, method, href, arg, ret in sorted(api_methods, key=lambda x: (x[2].split('?')[0], x[1], -len(x[0]))):
+sorted_apis = sorted(api_methods, key=lambda x: (x[2].split('?')[0], x[1], -len(x[0])))
+for crumbs, method, href, arg, ret in sorted_apis:
     key = (href.split('?')[0], method)
     if key not in seen and crumbs not in discard:
         api_method = {'method': method, 'href': href, 'argument': arg, 'return': ret}
@@ -224,20 +248,22 @@ for crumbs, method, href, arg, ret in sorted(api_methods, key=lambda x: (x[2].sp
         filtered_api_methods[crumbs] = api_method
     seen.add(key)
 filtered_api_methods.update(add)
-filtered_api_methods = dict(sorted(filtered_api_methods.items(), key=lambda x: x[0][:-1]))
+filtered_api_methods_reversed = sorted(
+    filtered_api_methods.items(), key=lambda x: x[0][:-1], reverse=True
+)
 
-#pprint.pprint(filtered_api_methods, sort_dicts=False)
+# pprint.pprint(filtered_api_methods, sort_dicts=False)
 
 # Write the argument models Python module.
-with open('toshling/models/argument_types.py', 'w') as f:
-    arguments = (api_method['argument'] for api_method in filtered_api_methods.values() if api_method['argument'])
-    f.write(statham.serializers.python.serialize_python(*arguments))
+arguments = (api_method['argument'] for api_method in filtered_api_methods.values() if api_method['argument'])
+arg_types_path = Path('toshling/models/argument_types.py')
+arg_types_path.write_text(statham.serializers.python.serialize_python(*arguments))
 
 # Automatically generate Python code for the endpoints.
-classes = []
+classes: List[Dict[str, List[Dict[str, Any]]]] = []
 subclasses = []
 prev_length = 0
-for crumbs, api_method in reversed(filtered_api_methods.items()):
+for crumbs, api_method in filtered_api_methods_reversed:
     classname = ''.join(n.capitalize() for n in crumbs[:-1])
     if not classes or classname != classes[-1]['name']:
         class_ = {'name': classname, 'methods': []}
@@ -257,6 +283,8 @@ for crumbs, api_method in reversed(filtered_api_methods.items()):
     method.update(api_method)
     classes[-1]['methods'].append(method)
 
-with open('_endpoints.py.tmpl') as tf, open('toshling/_endpoints.py', 'w') as ef:
-    template = Template(tf.read())
-    ef.write(template.render(classes=classes))
+
+end_tmp = Path('_endpoints.py.tmpl')
+template = Template(end_tmp.read_text())
+end_out = Path('toshling/_endpoints.py')
+end_out.write_text(template.render(classes=classes))

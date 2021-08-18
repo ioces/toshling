@@ -1,0 +1,3 @@
+requests
+statham-schema
+jinja2
