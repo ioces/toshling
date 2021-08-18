@@ -248,7 +248,9 @@ for crumbs, method, href, arg, ret in sorted_apis:
         filtered_api_methods[crumbs] = api_method
     seen.add(key)
 filtered_api_methods.update(add)
-filtered_api_methods = dict(sorted(filtered_api_methods.items(), key=lambda x: x[0][:-1]))
+filtered_api_methods_reversed = sorted(
+    filtered_api_methods.items(), key=lambda x: x[0][:-1], reverse=True
+)
 
 # pprint.pprint(filtered_api_methods, sort_dicts=False)
 
@@ -261,7 +263,7 @@ arg_types_path.write_text(statham.serializers.python.serialize_python(*arguments
 classes: List[Dict[str, List[Dict[str, Any]]]] = []
 subclasses = []
 prev_length = 0
-for crumbs, api_method in sorted(filtered_api_methods.items(), reverse=True):
+for crumbs, api_method in filtered_api_methods_reversed:
     classname = ''.join(n.capitalize() for n in crumbs[:-1])
     if not classes or classname != classes[-1]['name']:
         class_ = {'name': classname, 'methods': []}
