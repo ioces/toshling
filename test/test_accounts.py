@@ -9,7 +9,7 @@ class TestAccounts(unittest.TestCase):
     
     def test_list(self):
         for account in self.client.accounts.list():
-            self.assertIsInstance(account, toshling.models.account.Accounts)
+            self.assertIsInstance(account, toshling.models.return_types.Account)
 
 
 if __name__ == '__main__':
