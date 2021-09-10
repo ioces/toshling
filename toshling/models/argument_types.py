@@ -154,16 +154,6 @@ class CategoriesMergeArgument(Object):
     category: str = Property(String(), required=True)
 
 
-class CategoriesDeleteArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
-class CategoriesGetArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
 class CategoriesSumsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -197,6 +187,16 @@ class CategoriesSumsListArgument(Object):
     not_locations: Maybe[str] = Property(String(), source='!locations')
 
     not_tags: Maybe[str] = Property(String(), source='!tags')
+
+
+class CategoriesDeleteArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
+class CategoriesGetArgument(Object):
+
+    id: str = Property(String(), required=True)
 
 
 class CurrenciesListArgument(Object):
@@ -247,21 +247,6 @@ class EntriesListArgument(Object):
     not_tags: Maybe[str] = Property(String(), source='!tags')
 
 
-class EntriesSplitArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
-class EntriesDeleteArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
-class EntriesGetArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
 class EntriesLocationsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -304,6 +289,11 @@ class EntriesLocationsGetArgument(Object):
     id: str = Property(String(), required=True)
 
 
+class EntriesSplitArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
 class EntriesSumsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -339,6 +329,16 @@ class EntriesSumsListArgument(Object):
     not_tags: Maybe[str] = Property(String(), source='!tags')
 
 
+class EntriesDeleteArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
+class EntriesGetArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
 class ExportsListArgument(Object):
 
     page: int = Property(Integer(default=0, minimum=0))
@@ -348,39 +348,6 @@ class ExportsListArgument(Object):
     status: Maybe[str] = Property(String(enum=['sending', 'sent', 'error', 'generating', 'generated']))
 
     type: Maybe[str] = Property(String(enum=['export', 'attachments', 'user_data']))
-
-
-class ExportsCreateArgument(Object):
-
-    accounts: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
-
-    categories: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
-
-    emails: Maybe[List[str]] = Property(Array(String(format='email'), uniqueItems=True))
-
-    formats: Maybe[List[str]] = Property(Array(String(enum=['csv', 'xls', 'pdf', 'ofx']), additionalItems=False, uniqueItems=True))
-
-    from_: Maybe[str] = Property(String(format='date'), source='from')
-
-    locations: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
-
-    resources: Maybe[List[str]] = Property(Array(String(enum=['expenses', 'incomes', 'budgets', 'summary', 'attachments', 'attachments_grid', 'balances']), additionalItems=False, uniqueItems=True))
-
-    seen: Maybe[bool] = Property(Boolean())
-
-    tags: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
-
-    to: Maybe[str] = Property(String(format='date'))
-
-    type: str = Property(String(enum=['export', 'attachments', 'user_data']), required=True)
-
-    not_accounts: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!accounts')
-
-    not_categories: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!categories')
-
-    not_locations: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!locations')
-
-    not_tags: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!tags')
 
 
 class ExportsGetArgument(Object):
@@ -418,18 +385,6 @@ class ImagesGetArgument(Object):
     id: str = Property(String(), required=True)
 
 
-class MePushArgument(Object):
-
-    token: str = Property(String(), required=True)
-
-    type: str = Property(String(enum=['apple', 'apple_fcm', 'google', 'windows']), required=True)
-
-
-class MeRevertArgument(Object):
-
-    password: str = Property(String(), required=True)
-
-
 class MeAdjustCampaignArgument(Object):
 
     adgroup: str = Property(String(), required=True)
@@ -460,6 +415,18 @@ class MeNotificationsDeleteArgument(Object):
 class MeNotificationsGetArgument(Object):
 
     id: str = Property(String(), required=True)
+
+
+class MePushArgument(Object):
+
+    token: str = Property(String(), required=True)
+
+    type: str = Property(String(enum=['apple', 'apple_fcm', 'google', 'windows']), required=True)
+
+
+class MeRevertArgument(Object):
+
+    password: str = Property(String(), required=True)
 
 
 class TagsListArgument(Object):
@@ -498,16 +465,6 @@ class TagsMergeArgument(Object):
     tags: List[Any] = Property(Array(Element()), required=True)
 
 
-class TagsDeleteArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
-class TagsGetArgument(Object):
-
-    id: str = Property(String(), required=True)
-
-
 class TagsSumsListArgument(Object):
 
     accounts: Maybe[str] = Property(String())
@@ -539,6 +496,16 @@ class TagsSumsListArgument(Object):
     not_locations: Maybe[str] = Property(String(), source='!locations')
 
     not_tags: Maybe[str] = Property(String(), source='!tags')
+
+
+class TagsDeleteArgument(Object):
+
+    id: str = Property(String(), required=True)
+
+
+class TagsGetArgument(Object):
+
+    id: str = Property(String(), required=True)
 
 
 class Currency(Object):
@@ -843,11 +810,11 @@ class EntriesCreateArgument(Object):
 
     extra: Maybe[Extra] = Property(Extra)
 
-    images: Maybe[List[EntryImage]] = Property(Array(EntryImage, maxItems=4, uniqueItems=True))
+    images: Maybe[List[EntryImage]] = Property(Array(EntryImage, maxItems=4))
 
     location: Maybe[EntryLocation] = Property(EntryLocation)
 
-    reminders: Maybe[List[Reminder]] = Property(Array(Reminder, maxItems=5, uniqueItems=True))
+    reminders: Maybe[List[Reminder]] = Property(Array(Reminder, maxItems=5))
 
     repeat: Maybe[EntryRepeat] = Property(EntryRepeat)
 
@@ -878,19 +845,41 @@ class EntriesUpdateArgument(Object):
 
     id: str = Property(String(), required=True)
 
-    images: Maybe[List[EntryImage]] = Property(Array(EntryImage, maxItems=4, uniqueItems=True))
+    images: Maybe[List[EntryImage]] = Property(Array(EntryImage, maxItems=4))
 
     location: Maybe[EntryLocation] = Property(EntryLocation)
 
     modified: str = Property(String(), required=True)
 
-    reminders: Maybe[List[Reminder]] = Property(Array(Reminder, maxItems=5, uniqueItems=True))
+    reminders: Maybe[List[Reminder]] = Property(Array(Reminder, maxItems=5))
 
     repeat: Maybe[EntryRepeat] = Property(EntryRepeat)
 
     tags: Maybe[List[Any]] = Property(Array(Element()))
 
     transaction: Maybe[EntryTransaction] = Property(EntryTransaction)
+
+
+class Export(Object):
+
+    pass
+
+
+class ExportsCreateArgument(Object):
+
+    filters: Maybe[Export] = Property(Export)
+
+    formats: Maybe[Export] = Property(Export)
+
+    from_: Maybe[str] = Property(String(format='date'), source='from')
+
+    resources: Maybe[Export] = Property(Export)
+
+    seen: Maybe[bool] = Property(Boolean())
+
+    to: Maybe[str] = Property(String(format='date'))
+
+    type: str = Property(String(enum=['export', 'attachments', 'user_data']), required=True)
 
 
 class CustomCurrency(Object):

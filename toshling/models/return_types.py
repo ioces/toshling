@@ -480,7 +480,7 @@ class Entry(Object):
 
     id: Maybe[str] = Property(String())
 
-    images: Maybe[List[EntryImage]] = Property(Array(EntryImage, maxItems=4, uniqueItems=True))
+    images: Maybe[List[EntryImage]] = Property(Array(EntryImage, maxItems=4))
 
     import_: Maybe[EntryImport] = Property(EntryImport, source='import')
 
@@ -490,7 +490,7 @@ class Entry(Object):
 
     readonly: Maybe[List[str]] = Property(Array(String()))
 
-    reminders: Maybe[List[Reminder]] = Property(Array(Reminder, maxItems=5, uniqueItems=True))
+    reminders: Maybe[List[Reminder]] = Property(Array(Reminder, maxItems=5))
 
     repeat: Maybe[EntryRepeat] = Property(EntryRepeat)
 
@@ -530,20 +530,9 @@ class Day(Object):
     modified: Maybe[str] = Property(String())
 
 
-class ExportFile(Object):
-
-    filename: Maybe[str] = Property(String())
-
-    filesize: Maybe[float] = Property(Number())
-
-    format: Maybe[str] = Property(String(enum=['csv', 'xls', 'pdf', 'ofx']))
-
-
 class ExportData(Object):
 
     filename: Maybe[str] = Property(String())
-
-    files: Maybe[List[ExportFile]] = Property(Array(ExportFile))
 
     filesize: Maybe[float] = Property(Number())
 
@@ -554,41 +543,30 @@ class ExportData(Object):
 
 class Export(Object):
 
-    exclamation_mark_accounts: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!accounts')
+    pass
 
-    exclamation_mark_categories: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!categories')
 
-    exclamation_mark_locations: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!locations')
-
-    exclamation_mark_tags: Maybe[List[str]] = Property(Array(String(), uniqueItems=True), source='!tags')
-
-    accounts: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
-
-    categories: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
+class Export_1(Object):
 
     created: Maybe[str] = Property(String(format='date-time'))
 
     data: Maybe[ExportData] = Property(ExportData)
 
-    emails: Maybe[List[str]] = Property(Array(String(format='email'), uniqueItems=True))
+    filters: Maybe[Export] = Property(Export)
 
-    formats: Maybe[List[str]] = Property(Array(String(enum=['csv', 'xls', 'pdf', 'ofx']), additionalItems=False, uniqueItems=True))
+    formats: Maybe[Export] = Property(Export)
 
     from_: Maybe[str] = Property(String(format='date'), source='from')
 
     id: Maybe[str] = Property(String())
 
-    locations: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
-
     modified: Maybe[str] = Property(String())
 
-    resources: Maybe[List[str]] = Property(Array(String(enum=['expenses', 'incomes', 'budgets', 'summary', 'attachments', 'attachments_grid', 'balances']), additionalItems=False, uniqueItems=True))
+    resources: Maybe[Export] = Property(Export)
 
     seen: Maybe[bool] = Property(Boolean())
 
     status: Maybe[str] = Property(String(enum=['sending', 'sent', 'error', 'generating', 'generated']))
-
-    tags: Maybe[List[str]] = Property(Array(String(), uniqueItems=True))
 
     to: Maybe[str] = Property(String(format='date'))
 
@@ -860,11 +838,11 @@ class User(Object):
 
     pro: Maybe[UserPro] = Property(UserPro)
 
-    social: Maybe[List[str]] = Property(Array(String(enum=['toshl', 'google', 'facebook', 'twitter', 'evernote', 'foursquare', 'etalio', 'flickr', 'apple']), additionalItems=False, uniqueItems=True))
+    social: Maybe[List[str]] = Property(Array(String(enum=['toshl', 'google', 'facebook', 'twitter', 'evernote', 'foursquare', 'etalio', 'flickr', 'apple']), additionalItems=False))
 
     start_day: int = Property(Integer(default=1, minimum=1, maximum=31))
 
-    steps: Maybe[List[str]] = Property(Array(String(enum=['income', 'expense', 'budget', 'budget_category']), additionalItems=False, uniqueItems=True))
+    steps: Maybe[List[str]] = Property(Array(String(enum=['income', 'expense', 'budget', 'budget_category']), additionalItems=False))
 
     timezone: Maybe[str] = Property(String())
 
