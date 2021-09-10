@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 import pprint  # pylint: disable=unused-import  # for testing
 import shutil
@@ -140,10 +139,7 @@ with fixed_schema_path.joinpath('top.json').open('w') as f:
 
 # Convert the JSON schemas into Python objects using statham.
 # These form our return types.
-curr_dir = Path.cwd()
-os.chdir(fixed_schema_path)
-schema = materialize(RefDict('top.json'), context_labeller=title_labeller())
-os.chdir(curr_dir)
+schema = materialize(RefDict(str(fixed_schema_path.joinpath('top.json'))), context_labeller=title_labeller())
 
 returns = statham.schema.parser.parse(schema)
 returns_path = Path('toshling/models/return_types.py')
