@@ -47,7 +47,8 @@ class Client:
         self.me = endpoints.Me(self)
         self.tags = endpoints.Tags(self)
     
-    def request(self, href, method, argument_type=None, return_type=None, **kwargs):
+    def request(self, href, method, argument_type=None, return_type=None,
+                return_response=False, **kwargs):
         options = {}
 
         if argument_type:
@@ -78,15 +79,20 @@ class Client:
             # Attempt to construct the return type, handling lists, and some
             # dicts especially (Toshl decided that on some endpoints such as
             # the currencies list that they'd actually return a dict).
+            result = None
             if return_type:
                 plain = response.json()
                 if isinstance(plain, list):
-                    return [return_type(p) for p in plain]
+                    result = [return_type(p) for p in plain]
                 elif set(plain.keys()).issubset(set(p.source for p in return_type.properties.values())):
-                    return return_type(response.json())
+                    result = return_type(response.json())
                 elif isinstance(plain, dict):
-                    return {k: return_type(v) for k, v in plain.items()}
+                    result = {k: return_type(v) for k, v in plain.items()}
                 else:
-                    return plain
+                    result = plain
+            if return_response:
+                return result, response
+            else:
+                return result
         else:
             response.raise_for_status()
