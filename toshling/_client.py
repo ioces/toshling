@@ -16,6 +16,13 @@ def is_date(value: str) -> bool:
     except ValueError:
         return False
 
+@format_checker.register("time")
+def is_time(value: str) -> bool:
+    try:
+        return bool(datetime.strptime(value, '%H:%M:%S'))
+    except ValueError:
+        return False
+
 
 class StathamJSONEncoder(json.JSONEncoder):
     def default(self, o):
