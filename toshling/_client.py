@@ -60,6 +60,33 @@ class Client:
         # Parse the response.
         return self.__parse_response(response, return_type)
     
+    def iterate(self, href, argument_type=None, return_type=None, **kwargs):
+        ''' Makes a GET request, and handles pagination in the response headers.
+        '''
+
+        # Method is always GET.
+        method = 'GET'
+
+        # Prepare the request options (in particular request parameters).
+        options = self.__encode_request_options(method, argument_type, **kwargs)
+
+        # Create the initial URL.
+        url = self.api_endpoint_base + href.format(**kwargs)
+
+        # While we have URLs to follow, keep yielding.
+        while url:
+            # Do the request.
+            response = requests.request(method,
+                                        url,
+                                        auth=(self.api_key, ''),
+                                        **options)
+        
+            # Parse the response and yield the return value.
+            yield self.__parse_response(response, return_type)
+
+            # Check if we have another URL to follow.
+            url = response.links.get('next', {}).get('url', None)
+    
     @staticmethod
     def __encode_request_options(method, argument_type, **kwargs):
         options = {}
