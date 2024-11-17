@@ -47,8 +47,21 @@ class Client:
         self.me = endpoints.Me(self)
         self.tags = endpoints.Tags(self)
     
-    def request(self, href, method, argument_type=None, return_type=None,
-                return_response=False, **kwargs):
+    def request(self, href, method, argument_type=None, return_type=None, **kwargs):
+        # Prepare the request options (headers, data, parameters).
+        options = self.__encode_request_options(method, argument_type, **kwargs)
+
+        # Do the request.
+        response = requests.request(method,
+                                    self.api_endpoint_base + href.format(**kwargs),
+                                    auth=(self.api_key, ''),
+                                    **options)
+        
+        # Parse the response.
+        return self.__parse_response(response, return_type)
+    
+    @staticmethod
+    def __encode_request_options(method, argument_type, **kwargs):
         options = {}
 
         if argument_type:
@@ -67,14 +80,11 @@ class Client:
             else:
                 options['data'] = json.dumps(argument, cls=StathamJSONEncoder)
                 options['headers'] = {'Content-Type': 'application/json'}
-
-        # Do the request.
-        response = requests.request(method,
-                                    self.api_endpoint_base + href.format(**kwargs),
-                                    auth=(self.api_key, ''),
-                                    **options)
         
-        # Check if the response is OK.
+        return options
+    
+    @staticmethod
+    def __parse_response(response, return_type):
         if response.ok:
             # Attempt to construct the return type, handling lists, and some
             # dicts especially (Toshl decided that on some endpoints such as
@@ -83,16 +93,12 @@ class Client:
             if return_type:
                 plain = response.json()
                 if isinstance(plain, list):
-                    result = [return_type(p) for p in plain]
+                    return [return_type(p) for p in plain]
                 elif set(plain.keys()).issubset(set(p.source for p in return_type.properties.values())):
-                    result = return_type(response.json())
+                    return return_type(response.json())
                 elif isinstance(plain, dict):
-                    result = {k: return_type(v) for k, v in plain.items()}
+                    return {k: return_type(v) for k, v in plain.items()}
                 else:
-                    result = plain
-            if return_response:
-                return result, response
-            else:
-                return result
+                    return plain
         else:
             response.raise_for_status()
