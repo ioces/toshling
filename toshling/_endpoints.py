@@ -1,5 +1,4 @@
-from urllib.parse import urlparse, parse_qs
-
+from itertools import chain
 from .models import argument_types, return_types
 
 
@@ -7,30 +6,13 @@ class Endpoint:
     def __init__(self, client):
         self.client = client
 
-    def iterate(self, **kwargs):
-        ''' Transparently handle pagination.
-
-        Equivalent to calling list(page=0), list(page=1), ...
-        '''
-        items, response = self.list(**kwargs, return_response=True)
-        while True:
-            for item in items:
-                yield item
-
-            if 'next' not in response.links or 'url' not in response.links['next']:
-                break
-
-            url = response.links['next']['url']  # Of form '/tags?per_page=31&page=1'
-            try:
-                page = int(parse_qs(urlparse(url).query)['page'][0])
-            except:
-                break
-            items, response = self.list(**kwargs, return_response=True, page=page)
-
 
 class TagsSums(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/tags/sums', 'GET', argument_type=argument_types.TagsSumsListArgument, return_type=return_types.TagSum, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain(*self.client.iterate('/tags/sums', argument_type=argument_types.TagsSumsListArgument, return_type=return_types.TagSum, **kwargs))
     
 
 class Tags(Endpoint):
