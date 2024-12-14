@@ -71,13 +71,13 @@ class Client:
         options = self.__encode_request_options(method, argument_type, **kwargs)
 
         # Create the initial URL.
-        url = self.api_endpoint_base + href.format(**kwargs)
+        url = href.format(**kwargs)
 
         # While we have URLs to follow, keep yielding.
         while url:
             # Do the request.
             response = requests.request(method,
-                                        url,
+                                        self.api_endpoint_base + url,
                                         auth=(self.api_key, ''),
                                         **options)
         
