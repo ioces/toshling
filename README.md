@@ -33,6 +33,12 @@ client.entries.create(amount=168.43,
                       desc='Toilet paper for COVID-19 end-of-days',
                       account=accounts[0].id,
                       category=groceries_category.id)
+
+for entry in client.entries.iterate(accounts=account_id,
+                                    from_='2020-01-01',
+                                    to='2020-12-31'):
+    # Process each of many entries, with pagination transparently handled
+    ...
 ```
 
 More details on the required argument types and their validation can be found in the `toshling.models.argument_types` and `toshling.models.return_types`.

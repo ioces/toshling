@@ -16,6 +16,13 @@ def is_date(value: str) -> bool:
     except ValueError:
         return False
 
+@format_checker.register("time")
+def is_time(value: str) -> bool:
+    try:
+        return bool(datetime.strptime(value, '%H:%M:%S'))
+    except ValueError:
+        return False
+
 
 class StathamJSONEncoder(json.JSONEncoder):
     def default(self, o):
@@ -41,6 +48,51 @@ class Client:
         self.tags = endpoints.Tags(self)
     
     def request(self, href, method, argument_type=None, return_type=None, **kwargs):
+        # Prepare the request options (headers, data, parameters).
+        options = self.__encode_request_options(method, argument_type, **kwargs)
+
+        # Do the request.
+        response = requests.request(method,
+                                    self.api_endpoint_base + href.format(**kwargs),
+                                    auth=(self.api_key, ''),
+                                    **options)
+        
+        # Parse the response.
+        return self.__parse_response(response, return_type)
+    
+    def iterate(self, href, argument_type=None, return_type=None, **kwargs):
+        ''' Makes a GET request, and handles pagination in the response headers.
+        '''
+
+        # Method is always GET.
+        method = 'GET'
+
+        # Prepare the request options (in particular request parameters).
+        options = self.__encode_request_options(method, argument_type, **kwargs)
+
+        # Create the initial URL.
+        url = href.format(**kwargs)
+
+        # While we have URLs to follow, keep yielding.
+        while url:
+            # Do the request.
+            response = requests.request(method,
+                                        self.api_endpoint_base + url,
+                                        auth=(self.api_key, ''),
+                                        **options)
+        
+            # Parse the response and yield the return value.
+            yield self.__parse_response(response, return_type)
+
+            # Check if we have another URL to follow.
+            url = response.links.get('next', {}).get('url', None)
+            
+            # Clear parameters, as they're already encoded in the next url. If
+            # we don't, they get duplicated.
+            options['params'] = {}
+    
+    @staticmethod
+    def __encode_request_options(method, argument_type, **kwargs):
         options = {}
 
         if argument_type:
@@ -59,18 +111,16 @@ class Client:
             else:
                 options['data'] = json.dumps(argument, cls=StathamJSONEncoder)
                 options['headers'] = {'Content-Type': 'application/json'}
-
-        # Do the request.
-        response = requests.request(method,
-                                    self.api_endpoint_base + href.format(**kwargs),
-                                    auth=(self.api_key, ''),
-                                    **options)
         
-        # Check if the response is OK.
+        return options
+    
+    @staticmethod
+    def __parse_response(response, return_type):
         if response.ok:
             # Attempt to construct the return type, handling lists, and some
             # dicts especially (Toshl decided that on some endpoints such as
             # the currencies list that they'd actually return a dict).
+            result = None
             if return_type:
                 plain = response.json()
                 if isinstance(plain, list):

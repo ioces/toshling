@@ -1,3 +1,4 @@
+from itertools import chain
 from .models import argument_types, return_types
 
 
@@ -5,9 +6,13 @@ class Endpoint:
     def __init__(self, client):
         self.client = client
 
+
 class TagsSums(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/tags/sums', 'GET', argument_type=argument_types.TagsSumsListArgument, return_type=return_types.TagSum, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/tags/sums', argument_type=argument_types.TagsSumsListArgument, return_type=return_types.TagSum, **kwargs))
     
 
 class Tags(Endpoint):
@@ -17,6 +22,9 @@ class Tags(Endpoint):
     
     def list(self, **kwargs):
         return self.client.request('/tags', 'GET', argument_type=argument_types.TagsListArgument, return_type=return_types.Tag, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/tags', argument_type=argument_types.TagsListArgument, return_type=return_types.Tag, **kwargs))
     
     def create(self, **kwargs):
         return self.client.request('/tags', 'POST', argument_type=argument_types.TagsCreateArgument, **kwargs)
@@ -38,6 +46,9 @@ class MeNotifications(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/me/notifications', 'GET', argument_type=argument_types.MeNotificationsListArgument, return_type=return_types.Notification, **kwargs)
     
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/me/notifications', argument_type=argument_types.MeNotificationsListArgument, return_type=return_types.Notification, **kwargs))
+
     def dismiss_all(self, **kwargs):
         return self.client.request('/me/notifications/dismiss_all', 'POST', **kwargs)
     
@@ -81,6 +92,9 @@ class Me(Endpoint):
 class Images(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/images', 'GET', argument_type=argument_types.ImagesListArgument, return_type=return_types.Image, **kwargs)
+
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/images', argument_type=argument_types.ImagesListArgument, return_type=return_types.Image, **kwargs))
     
     def create(self, **kwargs):
         return self.client.request('/images', 'POST', **kwargs)
@@ -96,6 +110,9 @@ class Exports(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/exports', 'GET', argument_type=argument_types.ExportsListArgument, return_type=return_types.Export, **kwargs)
     
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/exports', argument_type=argument_types.ExportsListArgument, return_type=return_types.Export, **kwargs))
+    
     def create(self, **kwargs):
         return self.client.request('/exports', 'POST', argument_type=argument_types.ExportsCreateArgument, **kwargs)
     
@@ -110,10 +127,16 @@ class EntriesSums(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/entries/sums', 'GET', argument_type=argument_types.EntriesSumsListArgument, return_type=return_types.Day, **kwargs)
     
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/entries/sums', argument_type=argument_types.EntriesSumsListArgument, return_type=return_types.Day, **kwargs))
+    
 
 class EntriesLocations(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/entries/locations', 'GET', argument_type=argument_types.EntriesLocationsListArgument, return_type=return_types.Location, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/entries/locations', argument_type=argument_types.EntriesLocationsListArgument, return_type=return_types.Location, **kwargs))
     
     def get(self, **kwargs):
         return self.client.request('/entries/locations/{id}', 'GET', argument_type=argument_types.EntriesLocationsGetArgument, return_type=return_types.Location, **kwargs)
@@ -127,6 +150,9 @@ class Entries(Endpoint):
     
     def list(self, **kwargs):
         return self.client.request('/entries', 'GET', argument_type=argument_types.EntriesListArgument, return_type=return_types.Entry, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/entries', argument_type=argument_types.EntriesListArgument, return_type=return_types.Entry, **kwargs))
     
     def create(self, **kwargs):
         return self.client.request('/entries', 'POST', argument_type=argument_types.EntriesCreateArgument, **kwargs)
@@ -154,10 +180,16 @@ class Currencies(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/currencies', 'GET', argument_type=argument_types.CurrenciesListArgument, return_type=return_types.CurrencyElement, **kwargs)
     
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/currencies', argument_type=argument_types.CurrenciesListArgument, return_type=return_types.CurrencyElement, **kwargs))
+    
 
 class CategoriesSums(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/categories/sums', 'GET', argument_type=argument_types.CategoriesSumsListArgument, return_type=return_types.CategorySum, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/categories/sums', argument_type=argument_types.CategoriesSumsListArgument, return_type=return_types.CategorySum, **kwargs))
     
 
 class Categories(Endpoint):
@@ -167,6 +199,9 @@ class Categories(Endpoint):
     
     def list(self, **kwargs):
         return self.client.request('/categories', 'GET', argument_type=argument_types.CategoriesListArgument, return_type=return_types.Category, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/categories', argument_type=argument_types.CategoriesListArgument, return_type=return_types.Category, **kwargs))
     
     def create(self, **kwargs):
         return self.client.request('/categories', 'POST', argument_type=argument_types.CategoriesCreateArgument, **kwargs)
@@ -187,6 +222,9 @@ class Categories(Endpoint):
 class Budgets(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/budgets', 'GET', argument_type=argument_types.BudgetsListArgument, return_type=return_types.Budget, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/budgets', argument_type=argument_types.BudgetsListArgument, return_type=return_types.Budget, **kwargs))
     
     def create(self, **kwargs):
         return self.client.request('/budgets', 'POST', argument_type=argument_types.BudgetsCreateArgument, **kwargs)
@@ -213,6 +251,9 @@ class Budgets(Endpoint):
 class Accounts(Endpoint):
     def list(self, **kwargs):
         return self.client.request('/accounts', 'GET', argument_type=argument_types.AccountsListArgument, return_type=return_types.Account, **kwargs)
+    
+    def iterate(self, **kwargs):
+        return chain.from_iterable(self.client.iterate('/accounts', argument_type=argument_types.AccountsListArgument, return_type=return_types.Account, **kwargs))
     
     def create(self, **kwargs):
         return self.client.request('/accounts', 'POST', argument_type=argument_types.AccountsCreateArgument, **kwargs)
