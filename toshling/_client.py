@@ -86,6 +86,10 @@ class Client:
 
             # Check if we have another URL to follow.
             url = response.links.get('next', {}).get('url', None)
+            
+            # Clear parameters, as they're already encoded in the next url. If
+            # we don't, they get duplicated.
+            options['params'] = {}
     
     @staticmethod
     def __encode_request_options(method, argument_type, **kwargs):
